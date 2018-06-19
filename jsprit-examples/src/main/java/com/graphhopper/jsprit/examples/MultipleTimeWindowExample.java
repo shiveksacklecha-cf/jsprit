@@ -65,8 +65,8 @@ public class MultipleTimeWindowExample {
 
         Service service2 = Service.Builder.newInstance("2")
             .addSizeDimension(WEIGHT_INDEX, 1)
-//            .setServiceTime(10)
-            .setLocation(Location.newInstance(20, 0)).setServiceTime(10).build();
+            .addTimeWindow(10, 50)
+            .setLocation(Location.newInstance(20, 0)).setServiceTime(30).build();
 
         Service service3 = Service.Builder.newInstance("3")
             .addTimeWindow(5, 10)

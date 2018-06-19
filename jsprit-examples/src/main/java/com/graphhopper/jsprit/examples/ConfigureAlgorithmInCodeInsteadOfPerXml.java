@@ -76,6 +76,7 @@ public class ConfigureAlgorithmInCodeInsteadOfPerXml {
 
         VehicleRoutingProblem problem = vrpBuilder.build();
 
+
 		/*
          * get the algorithm out-of-the-box.
 		 */

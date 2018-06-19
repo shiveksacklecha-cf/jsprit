@@ -77,6 +77,7 @@ public class SimpleExampleOpenRoutes {
 
         VehicleRoutingProblem problem = vrpBuilder.build();
 
+
 		/*
          * get the algorithm out-of-the-box.
 		 */

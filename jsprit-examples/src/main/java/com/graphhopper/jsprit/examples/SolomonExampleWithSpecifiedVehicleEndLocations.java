@@ -57,7 +57,7 @@ public class SolomonExampleWithSpecifiedVehicleEndLocations {
 		/*
          * A solomonReader reads solomon-instance files, and stores the required information in the builder.
 		 */
-        new VrpXMLReader(vrpBuilder).read("input/deliveries_solomon_specifiedVehicleEndLocations_c101.xml");
+        new VrpXMLReader(vrpBuilder).read("jsprit-examples/input/deliveries_solomon_specifiedVehicleEndLocations_c101.xml");
 
 		/*
          * Finally, the problem can be built. By default, transportCosts are crowFlyDistances (as usually used for vrp-instances).
@@ -74,7 +74,7 @@ public class SolomonExampleWithSpecifiedVehicleEndLocations {
 		 */
 //		VehicleRoutingAlgorithm vra = new SchrimpfFactory().createAlgorithm(vrp);
         VehicleRoutingAlgorithm vra = Jsprit.createAlgorithm(vrp);
-        vra.setMaxIterations(20000);
+        vra.setMaxIterations(20);
 //		vra.setPrematureBreak(100);
         vra.getAlgorithmListeners().addListener(new AlgorithmSearchProgressChartListener("output/sol_progress.png"));
         /*
@@ -102,7 +102,7 @@ public class SolomonExampleWithSpecifiedVehicleEndLocations {
         solPlotter.plot("output/solomon_C101_specifiedVehicleEndLocations_solution.png", "C101");
 
 
-        new GraphStreamViewer(vrp, solution).setRenderDelay(50).labelWith(Label.ID).display();
+        new GraphStreamViewer(vrp, solution).setRenderDelay(100).labelWith(Label.ID).display();
 
 
     }

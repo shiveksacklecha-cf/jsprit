@@ -50,7 +50,7 @@ public class SolomonExample {
 		/*
          * A solomonReader reads solomon-instance files, and stores the required information in the builder.
 		 */
-        new SolomonReader(vrpBuilder).read("input/C101_solomon.txt");
+        new SolomonReader(vrpBuilder).read("jsprit-examples/input/C101_solomon.txt");
 
 
 		/*

@@ -49,7 +49,7 @@ public class SolomonOpenExample {
 		/*
          * A solomonReader reads solomon-instance files, and stores the required information in the builder.
 		 */
-        new VrpXMLReader(vrpBuilder).read("input/deliveries_solomon_open_c101.xml");
+        new VrpXMLReader(vrpBuilder).read("jsprit-examples/input/deliveries_solomon_open_c101.xml");
 
 		/*
          * Finally, the problem can be built. By default, transportCosts are crowFlyDistances (as usually used for vrp-instances).
@@ -75,7 +75,7 @@ public class SolomonOpenExample {
 //		vra.setPrematureBreak(100);
 //		vra.getAlgorithmListeners().addListener(new AlgorithmSearchProgressChartListener("output/sol_progress.png"));
         vra.addListener(eventsRecorder);
-        vra.setMaxIterations(200);
+        vra.setMaxIterations(1);
         /*
          * Solve the problem.
 		 *

@@ -57,7 +57,7 @@ public class VRPWithBackhaulsExample2 {
 		/*
          * A solomonReader reads solomon-instance files, and stores the required information in the builder.
 		 */
-        new VrpXMLReader(vrpBuilder).read("input/pd_christophides_vrpnc1_vcap50.xml");
+        new VrpXMLReader(vrpBuilder).read("jsprit-examples/input/pd_christophides_vrpnc1_vcap50.xml");
 
 
 		/*

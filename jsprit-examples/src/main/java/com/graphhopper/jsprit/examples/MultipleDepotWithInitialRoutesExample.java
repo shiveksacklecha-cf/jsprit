@@ -17,6 +17,7 @@
  */
 package com.graphhopper.jsprit.examples;
 
+import com.graphhopper.jsprit.analysis.toolbox.GraphStreamViewer;
 import com.graphhopper.jsprit.analysis.toolbox.Plotter;
 import com.graphhopper.jsprit.analysis.toolbox.Plotter.Label;
 import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
@@ -49,7 +50,7 @@ public class MultipleDepotWithInitialRoutesExample {
         /*
          * Read cordeau-instance p01
 		 */
-        new VrpXMLReader(vrpBuilder).read("input/cordeau01.xml");
+        new VrpXMLReader(vrpBuilder).read("jsprit-examples/input/cordeau01.xml");
 
 		/*
          * Add initial route with 1_4_vehicle and services 44, 26
@@ -86,6 +87,7 @@ public class MultipleDepotWithInitialRoutesExample {
         SolutionPrinter.print(Solutions.bestOf(solutions));
 
         new Plotter(vrp, Solutions.bestOf(solutions)).setLabel(Label.ID).plot("output/cordeau01_solution_withInitialRoute.png", "p01");
+        new GraphStreamViewer(vrp, Solutions.bestOf(solutions)).setRenderDelay(0).display();
 
 
     }

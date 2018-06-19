@@ -29,7 +29,7 @@ import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
 public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCosts {
 
-    private double speed = 1.;
+    private double speed = 8.33;
 
     private double detour = 1.;
 

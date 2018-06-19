@@ -52,7 +52,7 @@ public class MultipleDepotExample {
         /*
          * Read cordeau-instance p01, BUT only its services without any vehicles
 		 */
-        new VrpXMLReader(vrpBuilder).read("input/vrp_cordeau_01.xml");
+        new VrpXMLReader(vrpBuilder).read("jsprit-examples/input/vrp_cordeau_01.xml");
 
 		/*
          * add vehicles with its depots
@@ -104,11 +104,11 @@ public class MultipleDepotExample {
         vra.getAlgorithmListeners().addListener(new AlgorithmSearchProgressChartListener("output/progress.png"));
         Collection<VehicleRoutingProblemSolution> solutions = vra.searchSolutions();
 
-        SolutionPrinter.print(Solutions.bestOf(solutions));
+        SolutionPrinter.print(vrp,Solutions.bestOf(solutions),SolutionPrinter.Print.VERBOSE);
 
         new Plotter(vrp, Solutions.bestOf(solutions)).setLabel(Plotter.Label.ID).plot("output/p01_solution.png", "p01");
 
-        new GraphStreamViewer(vrp, Solutions.bestOf(solutions)).setRenderDelay(100).display();
+        new GraphStreamViewer(vrp, Solutions.bestOf(solutions)).setRenderDelay(10).display();
 
     }
 
