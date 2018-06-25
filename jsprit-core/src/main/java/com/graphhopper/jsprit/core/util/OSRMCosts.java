@@ -1,22 +1,4 @@
-/*
- * Licensed to GraphHopper GmbH under one or more contributor
- * license agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- *
- * GraphHopper GmbH licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.graphhopper.jsprit.core.util;
-
 
 import com.graphhopper.jsprit.core.CurefitUtil.CentreConfig;
 import com.graphhopper.jsprit.core.CurefitUtil.Constants;
@@ -25,16 +7,11 @@ import com.graphhopper.jsprit.core.problem.cost.AbstractForwardVehicleRoutingTra
 import com.graphhopper.jsprit.core.problem.driver.Driver;
 import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
-/**
- * @author stefan schroeder
- */
-
-public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCosts {
-
-    //in km/hr
-    private double speed = 4;
+public class OSRMCosts extends AbstractForwardVehicleRoutingTransportCosts {
 
     private double detour = 1.;
+    private double speed = 4;
+
 
     public void setSpeed(double speed) {
         this.speed = speed;
@@ -54,11 +31,11 @@ public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCost
 
     private DistanceUnit distanceUnit = DistanceUnit.Meter;
 
-   public GreatCircleCosts() {
+    public OSRMCosts() {
         super();
     }
 
-    public GreatCircleCosts(DistanceUnit distanceUnit) {
+    public OSRMCosts(DistanceUnit distanceUnit) {
         super();
         this.distanceUnit = distanceUnit;
     }
@@ -89,9 +66,7 @@ public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCost
             to = toLocation.getCoordinate();
         }
         if (from == null || to == null) throw new NullPointerException("either from or to location is null");
-        Double distance = GreatCircleDistanceCalculator.calculateDistance(from, to, distanceUnit) * detour;
-//        System.out.println("distance: "+ distance);
-        return distance;
+        return OSRMDistanceCalculator.calculateDistance(from, to, distanceUnit) * detour;
     }
 
     @Override
@@ -104,8 +79,7 @@ public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCost
 
     @Override
     public double getDistance(Location from, Location to, double departureTime, Vehicle vehicle) {
-       Double distance = calculateDistance(from, to);
-//        System.out.println("distance: "+ distance);
-        return distance;
+        return calculateDistance(from, to);
     }
 }
+

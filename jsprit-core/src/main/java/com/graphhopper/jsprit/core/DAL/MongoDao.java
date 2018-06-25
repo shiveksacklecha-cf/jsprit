@@ -1,6 +1,8 @@
 package com.graphhopper.jsprit.core.DAL;
 
 import com.graphhopper.jsprit.core.Bean.UserBean;
+import com.graphhopper.jsprit.core.CurefitUtil.Constants;
+import com.graphhopper.jsprit.core.CurefitUtil.SlotUtil;
 import com.mongodb.*;
 
 import java.net.UnknownHostException;
@@ -11,13 +13,25 @@ import java.util.Locale;
 
 public class MongoDao {
 
-    private DB db;
 
-    public MongoDao() throws UnknownHostException {
+
+
+    private DB db;
+    private String centreId;
+    private String slot;
+    private String deliveryChannel;
+    private String deliveryDate;
+
+
+    public MongoDao(String centreId, String slot, String deliveryChannel, String deliveryDate) throws UnknownHostException {
+        this.centreId = centreId;
+        this.slot = slot;
+        this.deliveryChannel = deliveryChannel;
+        this.deliveryDate = deliveryDate;
 
         // Since 2.10.0, uses MongoClient
-        MongoClient mongo = new MongoClient( "localhost" , 27017 );
-        this.db = mongo.getDB("test");
+        MongoClient mongo = new MongoClient(Constants.MONGO_HOST , Constants.MONGO_PORT );
+        this.db = mongo.getDB(Constants.MONGO_DB);
 
 
 
@@ -25,16 +39,11 @@ public class MongoDao {
     public ArrayList<UserBean> getUserData()
     {
         BasicDBObject searchQuery = new BasicDBObject();
-        searchQuery.put("deliveryDate", "2018-05-28");
-        searchQuery.put("deliveryChannel","ONLINE");
-        ArrayList<String> slotList = new ArrayList<>();
-        slotList.add("BREAKFAST1");
-        slotList.add("BREAKFAST2");
-        slotList.add("BREAKFAST3");
-        slotList.add("B1");
-        searchQuery.put("deliverySlot", new BasicDBObject("$in",slotList ));
-        searchQuery.put("centerId","S1hkbFosl");
-        DBCollection table = db.getCollection("foodshipments");
+        searchQuery.put("deliveryDate", deliveryDate);
+        searchQuery.put("deliveryChannel",deliveryChannel);
+        searchQuery.put("deliverySlot", new BasicDBObject("$in",SlotUtil.getSlots(slot)));
+        searchQuery.put("centerId",centreId);
+        DBCollection table = db.getCollection(Constants.MONGO_COLLECTION);
         DBCursor cursor = table.find(searchQuery);
 
         ArrayList<UserBean> userBeans = new ArrayList<>();
@@ -46,6 +55,18 @@ public class MongoDao {
             String orderId = basicDBObject.get("orderId").toString();
             String shipmentId = basicDBObject.get("shipmentId").toString();
             String cartShipmentId = basicDBObject.get("cartShipmentId").toString();
+            String deliveryType = basicDBObject.get("deliveryType").toString();
+            Long createdTime  = getDate(basicDBObject.get("createdDate").toString());
+//            if(createdTime <= Constants.DISPATCH_TIME)
+//            {
+//                System.out.println("created time: "+ basicDBObject.get("createdDate"));
+//                System.out.println("start time: "+((BasicDBObject)basicDBObject.get("deliveryWindow")).get("start").toString());
+//                System.out.println("end time: "+((BasicDBObject)basicDBObject.get("deliveryWindow")).get("end").toString());
+//
+//            }
+
+
+
 
 
             ArrayList<Double> latLong = new ArrayList<>();
@@ -53,7 +74,7 @@ public class MongoDao {
             for(Object ul: list) {
                 latLong.add(Double.parseDouble(ul.toString()));
             }
-            userBeans.add(new UserBean(userId, orderId, shipmentId, cartShipmentId, deliveryStartTime, deliveryEndTime, latLong.get(0), latLong.get(1)));
+            userBeans.add(new UserBean(userId, orderId, shipmentId, cartShipmentId, deliveryStartTime, deliveryEndTime, latLong.get(0), latLong.get(1), createdTime,deliveryType));
 
 
         }
@@ -62,13 +83,10 @@ public class MongoDao {
     }
     public static Long getDate(String date)
     {
-        System.out.println(date);
-        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
-
+        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT, Locale.ENGLISH);
         try {
 
-            ZonedDateTime s = ZonedDateTime.parse(date, inputFormatter);
-            System.out.println(s.toEpochSecond());
+            ZonedDateTime s = ZonedDateTime.parse(date.substring(4), inputFormatter);
             return s.toEpochSecond();
         }
         catch (Exception e)
@@ -79,7 +97,5 @@ public class MongoDao {
 
     }
 
-    public static void main(String[] args) throws UnknownHostException {
-        new MongoDao();
-    }
+
 }

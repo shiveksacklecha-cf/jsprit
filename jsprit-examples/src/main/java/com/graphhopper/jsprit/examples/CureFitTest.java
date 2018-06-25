@@ -2,68 +2,86 @@ package com.graphhopper.jsprit.examples;
 
 import com.graphhopper.jsprit.analysis.toolbox.GraphStreamViewer;
 import com.graphhopper.jsprit.core.Bean.CartShipment;
+import com.graphhopper.jsprit.core.Bean.CentreConfigBean;
 import com.graphhopper.jsprit.core.Bean.UserBean;
+import com.graphhopper.jsprit.core.CurefitUtil.CentreConfig;
+import com.graphhopper.jsprit.core.CurefitUtil.Constants;
+import com.graphhopper.jsprit.core.CurefitUtil.StaticUtil;
 import com.graphhopper.jsprit.core.DAL.MongoDao;
+import com.graphhopper.jsprit.core.DAL.RedisDao;
+import com.graphhopper.jsprit.core.DAL.SerializerUtil;
 import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
+import com.graphhopper.jsprit.core.algorithm.state.StateId;
+import com.graphhopper.jsprit.core.algorithm.state.StateManager;
+import com.graphhopper.jsprit.core.algorithm.state.UpdateMaxTimeInVehicle;
 import com.graphhopper.jsprit.core.problem.Location;
 import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
-import com.graphhopper.jsprit.core.problem.job.Delivery;
+import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager;
+import com.graphhopper.jsprit.core.problem.constraint.MaxTimeInVehicleConstraint;
+import com.graphhopper.jsprit.core.problem.constraint.ServiceDeliveriesFirstConstraint;
+import com.graphhopper.jsprit.core.problem.job.Shipment;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.reporting.SolutionPrinter;
 import com.graphhopper.jsprit.core.util.GreatCircleCosts;
+import com.graphhopper.jsprit.core.util.OSRMCosts;
+import com.graphhopper.jsprit.core.util.OSRMDistanceCalculator;
 import com.graphhopper.jsprit.core.util.Solutions;
 
+import java.io.FileNotFoundException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class CureFitTest {
+    static MongoDao mongoDao;
+    static CentreConfigBean centreConfigBean;
+    static RedisDao redisDao;
+
+
+    public static void init(String slot, String centreName, String deliveryChannel, String deliveryDate) throws UnknownHostException {
+        centreConfigBean = CentreConfig.setCentreConfig(centreName, slot);
+        mongoDao = new MongoDao(centreConfigBean.getCentreId(), slot, deliveryChannel, deliveryDate);
+        redisDao = new RedisDao();
+        new StaticUtil(centreConfigBean.getCentreName());
+
+    }
+
     public static void main(String[] args) throws UnknownHostException {
 
-        /*
-         * get a vehicle type-builder and build a type with the typeId "vehicleType" and one capacity dimension, i.e. weight, and capacity dimension value of 2
-         */
-        final int WEIGHT_INDEX = 0;
-        final int NUM_LOCATIONS_INDEX = 0;
+
+
+
+        init(Constants.LUNCH_SLOT,Constants.KITCHEN.HSR.name(),Constants.DELIVERY_CHANNEL, Constants.DELIVERY_DATE );
 
         VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance("vehicleType")
-            .addCapacityDimension(WEIGHT_INDEX, 12)
-            .addCapacityDimension(NUM_LOCATIONS_INDEX,5);
+            .addCapacityDimension(Constants.WEIGHT_INDEX, Constants.CAPACITY_WEIGHT)
+            .setCostPerWaitingTime(2)
+            .setFixedCost(200000);
         VehicleType vehicleType = vehicleTypeBuilder.build();
 
-        /*
-         * get a vehicle-builder and build a vehicle located at (10,10) with type "vehicleType"
-         */
+
         VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
 
-        for( int i=0;i<15; i++)
+        for( int i=0;i<centreConfigBean.getFleetSize(); i++)
         {
             VehicleImpl.Builder vehicleBuilder = VehicleImpl.Builder.newInstance("v: " + i);
-            vehicleBuilder.setStartLocation(Location.newInstance(77.627168, 12.912351));
+            vehicleBuilder.setStartLocation(Location.newInstance(centreConfigBean.getCentreLong(), centreConfigBean.getCentreLat()));
             vehicleBuilder.setType(vehicleType);
-//            vehicleBuilder.setReturnToDepot(false);
-            vehicleBuilder.setEarliestStart(MongoDao.getDate("Tue May 28 06:30:00 IST 2018"));
+            //setting earliest time to 0
+            vehicleBuilder.setEarliestStart(0);
             VehicleImpl vehicle = vehicleBuilder.build();
             vrpBuilder.addVehicle(vehicle);
 
         }
 
 
-
-
-        /*
-         * build services at the required locations, each with a capacity-demand of 1.
-         */
-        ArrayList<Delivery> deliveries
-            = new ArrayList<>();
-
-        MongoDao mongoDao = new MongoDao();
         ArrayList<UserBean> userBeans = mongoDao.getUserData();
 
         Map<String,CartShipment> cartShipmentIdToCShipment = new HashMap<>();
@@ -75,38 +93,79 @@ public class CureFitTest {
             }
             else
             {
-                CartShipment cartShipment = new CartShipment(userBean.getUserId(), userBean.getOrderId(), userBean.getCartShipmentId(), userBean.getDeliveryStartTime(), userBean.getDeliveryEndTime(), userBean.getLatitude(), userBean.getLongitude());
+                CartShipment cartShipment = new CartShipment(userBean.getUserId(), userBean.getOrderId(), userBean.getCartShipmentId(), userBean.getDeliveryStartTime(), userBean.getDeliveryEndTime(), userBean.getLatitude(), userBean.getLongitude(), userBean.getCreatedTime(),userBean.getDeliveryType());
                 cartShipment.addShipment(userBean.getShipmentId());
                 cartShipmentIdToCShipment.put(userBean.getCartShipmentId(), cartShipment);
             }
         }
+        ArrayList<Shipment> shipments
+            = new ArrayList<>();
+
         for (CartShipment cartShipment :cartShipmentIdToCShipment.values())
         {
-            Delivery delivery = Delivery.Builder.newInstance(cartShipment.getCartShipmentId())
-                .setServiceTime(360)
-                .setMaxTimeInVehicle(3000)
-                .addTimeWindow(cartShipment.getDeliveryStartTime(),cartShipment.getDeliveryEndTime())
-                .addSizeDimension(WEIGHT_INDEX, cartShipment.getNumberOfShipments())
-                .addSizeDimension(NUM_LOCATIONS_INDEX, 1)
-                .setLocation(Location.newInstance(cartShipment.getLatitude(), cartShipment.getLongitude())).build();
-            deliveries.add(delivery);
+                Shipment shipment = Shipment.Builder.newInstance(cartShipment.getCartShipmentId())
+                    .setPickupLocation(Location.newInstance(centreConfigBean.getCentreLong(), centreConfigBean.getCentreLat()))
+                    .setDeliveryLocation(Location.newInstance(cartShipment.getLongitude(), cartShipment.getLatitude()))
+                    .setDeliveryServiceTime(Constants.DELIVERY_SERVICE_TIME)
+                    .setMaxTimeInVehicle(Constants.MAX_TIME_IN_VEHICLE)
+                    .addDeliveryTimeWindow(Math.max(cartShipment.getDeliveryStartTime() - Constants.DISPATCH_TIME,0),Math.max(cartShipment.getDeliveryEndTime() - Constants.DISPATCH_TIME,0))
+//                    .addDeliveryTimeWindow((cartShipment.getDeliveryStartTime()),(cartShipment.getDeliveryEndTime()))
+                    .addSizeDimension(Constants.WEIGHT_INDEX, cartShipment.getNumberOfShipments())
+                    //get the avg time to deliver a slotted order (minimise this constraint)
+                    .setPriority(cartShipment.getDeliveryType().equals("SLOTTED")?1:2)
+                    .build();
+                shipments.add(shipment);
+
+                if( cartShipment.getDeliveryStartTime() < Constants.DISPATCH_TIME)
+                    System.out.println(cartShipment.getDeliveryStartTime()+":"+Constants.DISPATCH_TIME);
+                if( cartShipment.getDeliveryEndTime() < Constants.DISPATCH_TIME)
+                    System.out.println(cartShipment.getDeliveryEndTime()+":"+Constants.DISPATCH_TIME);
+
+
         }
 
 
 
 
+        int i=0;
+        for(Shipment shipment : shipments)
+        {
+            vrpBuilder.addJob(shipment);
+//            if(i==5)
+//                break;
+//            i++;
+        }
 
-        for(Delivery delivery : deliveries)
-            vrpBuilder.addJob(delivery);
         vrpBuilder.setFleetSize(VehicleRoutingProblem.FleetSize.FINITE);
-        vrpBuilder.setRoutingCost(new GreatCircleCosts());
+        vrpBuilder.setRoutingCost(new OSRMCosts());
+//        vrpBuilder.setRoutingCost(new GreatCircleCosts());
         VehicleRoutingProblem problem = vrpBuilder.build();
 
         /*
          * get the algorithm out-of-the-box.
          */
-        VehicleRoutingAlgorithm algorithm = Jsprit.createAlgorithm(problem);
-        algorithm.setMaxIterations(500);
+
+        StateManager stateManager = new StateManager(problem);
+        StateId id = stateManager.createStateId("max-time");
+        StateId openJobsId = stateManager.createStateId("open-jobs-id");
+        stateManager.addStateUpdater(new UpdateMaxTimeInVehicle(stateManager, id, problem.getTransportCosts(), problem.getActivityCosts(), openJobsId));
+
+        ConstraintManager constraintManager = new ConstraintManager(problem,stateManager);
+        constraintManager.addConstraint(new ServiceDeliveriesFirstConstraint(), ConstraintManager.Priority.CRITICAL);
+        constraintManager.addConstraint(new MaxTimeInVehicleConstraint(problem.getTransportCosts(), problem.getActivityCosts(), id, stateManager, problem, openJobsId), ConstraintManager.Priority.CRITICAL);
+
+
+
+        //check fleetmanager example
+
+        VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(problem)
+            .setStateAndConstraintManager(stateManager,constraintManager).setProperty(Jsprit.Parameter.FAST_REGRET, "true")
+            .setProperty(Jsprit.Parameter.THREADS, Constants.NUM_OF_THREADS)
+            .setProperty(Jsprit.Parameter.FIXED_COST_PARAM, "2.")
+            .buildAlgorithm();
+
+        algorithm.setMaxIterations(Constants.MAX_ITERATIONS);
+
 
 
         /*
@@ -119,17 +178,21 @@ public class CureFitTest {
          */
         VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
 
-//        new VrpXMLWriter(problem, solutions).write("output/problem-with-solution.xml");
 
         SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
 
-        new GraphStreamViewer(problem, Solutions.bestOf(solutions)).setRenderDelay(20).display();
-        /*
-         * plot
-         */
-//        new Plotter(problem,bestSolution).setLabel(Plotter.Label.ID).plot("output/plot", "mtw");
+        new GraphStreamViewer(problem, Solutions.bestOf(solutions)).setRenderDelay(Constants.RENDER_DELAY).display();
 
-//        new GraphStreamViewer(problem, bestSolution).labelWith(Label.ID).setRenderDelay(200).display();
+        redisDao.closeJedis();
+
+//        try {
+//            SerializerUtil.serializeObject(StaticUtil.distanceMatrix,"osrm_distances_" + centreConfigBean.getCentreName());
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+
+
     }
+
 
 }

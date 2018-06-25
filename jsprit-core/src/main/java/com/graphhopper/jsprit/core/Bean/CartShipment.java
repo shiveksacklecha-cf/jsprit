@@ -12,8 +12,19 @@ public class CartShipment {
     Long deliveryStartTime;
     Long deliveryEndTime;
     String orderId;
+    String deliveryType;
+    private Long createdTime;
 
-    public CartShipment(String userId, String orderId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double latitude, Double longitude) {
+    public Long getCreatedTime() {
+        return createdTime;
+    }
+
+
+    public String getDeliveryType() {
+        return deliveryType;
+    }
+
+    public CartShipment(String userId, String orderId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double latitude, Double longitude, Long createdTime, String deliveryType) {
         this.userId = userId;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -21,6 +32,9 @@ public class CartShipment {
         this.deliveryStartTime = deliveryStartTime;
         this.deliveryEndTime = deliveryEndTime;
         this.orderId = orderId;
+        this.createdTime = createdTime;
+        this.deliveryType = deliveryType;
+
         shipmentIds = new ArrayList<>();
     }
 

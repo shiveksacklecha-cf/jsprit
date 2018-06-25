@@ -5,12 +5,14 @@ import java.util.Date;
 public class UserBean {
     String userId;
     Double latitude;
+    private Long createdTime;
     Double longitude;
     private String shipmentId;
     private String cartShipmentId;
     Long deliveryStartTime;
     Long deliveryEndTime;
     String orderId;
+    private String deliveryType;
 
     public Long getDeliveryStartTime() {
         return deliveryStartTime;
@@ -28,7 +30,13 @@ public class UserBean {
         return cartShipmentId;
     }
 
-    public UserBean(String userId, String orderId, String shipmentId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double latitude, Double longitude) {
+    public Long getCreatedTime() {
+        return createdTime;
+    }
+
+
+
+    public UserBean(String userId, String orderId, String shipmentId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double longitude, Double latitude, Long createdTime,String deliveryType) {
         this.userId = userId;
         this.orderId = orderId;
         this.shipmentId = shipmentId;
@@ -36,8 +44,10 @@ public class UserBean {
         this.deliveryStartTime = deliveryStartTime;
 
         this.deliveryEndTime = deliveryEndTime;
-        this.latitude = latitude;
         this.longitude = longitude;
+        this.latitude = latitude;
+        this.createdTime = createdTime;
+        this.deliveryType = deliveryType;
     }
 
     public String getUserId() {
@@ -55,5 +65,9 @@ public class UserBean {
     public String getOrderId() {
         return orderId;
     }
+    public String getDeliveryType() {
+        return deliveryType;
+    }
+
 
 }

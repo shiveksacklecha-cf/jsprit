@@ -438,11 +438,25 @@ public class GraphStreamViewer {
         int noJobs = 0;
         if (this.vrp != null) noJobs = this.vrp.getJobs().values().size();
 
+        int noUnassignedJobs = 0;
+        if (this.solution != null) noUnassignedJobs = this.solution.getUnassignedJobs().size();
+
+
         JFormattedTextField nJobs = new JFormattedTextField(noJobs);
         nJobs.setFont(font);
         nJobs.setEditable(false);
         nJobs.setBorder(BorderFactory.createEmptyBorder());
         nJobs.setBackground(new Color(230, 230, 230));
+
+        JLabel unAssignedJobs = new JLabel("UnAssnd");
+        unAssignedJobs.setFont(font);
+        unAssignedJobs.setPreferredSize(new Dimension((int) (60 * scaling), (int) (25 * scaling)));
+
+        JFormattedTextField nUnAssignedJobs = new JFormattedTextField(noUnassignedJobs);
+        nUnAssignedJobs.setFont(font);
+        nUnAssignedJobs.setEditable(false);
+        nUnAssignedJobs.setBorder(BorderFactory.createEmptyBorder());
+        nUnAssignedJobs.setBackground(new Color(230, 230, 230));
 
         JLabel costs = new JLabel("costs");
         costs.setFont(font);
@@ -485,6 +499,12 @@ public class GraphStreamViewer {
 
         subpanel.add(vehicles);
         subpanel.add(vehVal);
+
+        JLabel emptyLabel3 = createEmptyLabel();
+        subpanel.add(emptyLabel3);
+
+        subpanel.add(unAssignedJobs);
+        subpanel.add(nUnAssignedJobs);
 
         panel.add(subpanel);
 
