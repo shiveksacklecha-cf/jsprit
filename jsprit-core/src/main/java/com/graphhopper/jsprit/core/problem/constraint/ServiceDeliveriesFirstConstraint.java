@@ -19,6 +19,16 @@ package com.graphhopper.jsprit.core.problem.constraint;
 
 import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.*;
+import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.graphhopper.jsprit.core.CurefitUtil.StaticUtil.checkStack;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 
 public class ServiceDeliveriesFirstConstraint implements HardActivityConstraint {
 
@@ -49,8 +59,76 @@ public class ServiceDeliveriesFirstConstraint implements HardActivityConstraint 
         if (newAct instanceof DeliverShipment && nextAct instanceof DeliverService) {
             return ConstraintsStatus.NOT_FULFILLED;
         }
+        if(newAct instanceof PickupShipment && prevAct instanceof DeliverShipment && nextAct instanceof DeliverShipment ) {
+            return ConstraintsStatus.NOT_FULFILLED;
+        }
+        if(newAct instanceof DeliverShipment && prevAct instanceof PickupShipment && nextAct instanceof PickupShipment ) {
+            return ConstraintsStatus.NOT_FULFILLED;
+        }
+        if(newAct instanceof DeliverShipment)
+        {
+            List<TourActivity> tourActivityList = iFacts.getRoute().getActivities();
+            Integer pickupIdx = iFacts.getRelatedActivityContext().getInsertionIndex();
+            Integer deliverIndex = iFacts.getActivityContext().getInsertionIndex();
+
+            int n = tourActivityList.size(),sum=0;
+            Boolean closeFlagEnabled= false;
+            for(int i =0 ;i<n;i++)
+            {
+                if(i == pickupIdx)
+                {
+                    sum+=1;
+                }
+                else if(i == deliverIndex)
+                {
+                    sum-=1;
+                    closeFlagEnabled =true;
+                }
+                if(closeFlagEnabled)
+                {
+                    if(tourActivityList.get(i) instanceof PickupShipment)
+                        return ConstraintsStatus.NOT_FULFILLED;
+                    else
+                        sum -=1;
+                }
+                else {
+                    if(tourActivityList.get(i) instanceof PickupShipment)
+                        sum+=1;
+                    else
+                    {
+                        sum -=1;
+                        closeFlagEnabled = true;
+                    }
+                }
+                if(sum == 0)
+                    closeFlagEnabled=false;
+                else if(sum < 0)
+                    return ConstraintsStatus.NOT_FULFILLED;
+
+            }
+            if(sum<0)
+                return ConstraintsStatus.NOT_FULFILLED;
+        }
+
 
         return ConstraintsStatus.FULFILLED;
+    }
+
+
+
+    public static void main(String[] args) {
+        List<TourActivity> tourActivities = new ArrayList<>();
+        tourActivities.add(mock(PickupShipment.class));
+        tourActivities.add(mock(PickupShipment.class));
+        tourActivities.add(mock(PickupShipment.class));
+        tourActivities.add(mock(DeliverShipment.class));
+        tourActivities.add(mock(DeliverShipment.class));
+        tourActivities.add(mock(PickupShipment.class));
+        tourActivities.add(mock(DeliverShipment.class));
+        tourActivities.add(mock(DeliverShipment.class));
+
+        System.out.println(checkStack(tourActivities));
+
     }
 
 }

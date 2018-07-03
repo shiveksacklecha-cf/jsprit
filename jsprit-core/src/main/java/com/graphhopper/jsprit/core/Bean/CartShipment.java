@@ -1,5 +1,7 @@
 package com.graphhopper.jsprit.core.Bean;
 
+import com.graphhopper.jsprit.core.util.Coordinate;
+
 import java.util.ArrayList;
 
 public class CartShipment {
@@ -13,8 +15,11 @@ public class CartShipment {
     Long deliveryEndTime;
     String orderId;
     String deliveryType;
+    private String deliverySlot;
+    private String deliveryStartTimeString;
+    private String deliveryendTimeString;
     private Long createdTime;
-
+    private Coordinate coordinate;
     public Long getCreatedTime() {
         return createdTime;
     }
@@ -24,7 +29,23 @@ public class CartShipment {
         return deliveryType;
     }
 
-    public CartShipment(String userId, String orderId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double latitude, Double longitude, Long createdTime, String deliveryType) {
+    public String getDeliverySlot() {
+        return deliverySlot;
+    }
+
+    public String getDeliveryStartTimeString() {
+        return deliveryStartTimeString;
+    }
+
+    public String getDeliveryendTimeString() {
+        return deliveryendTimeString;
+    }
+
+    public Coordinate getCoordinate() {
+        return coordinate;
+    }
+
+    public CartShipment(String userId, String orderId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double latitude, Double longitude, Long createdTime, String deliveryType, String deliverySlot, String deliveryStartTimeString, String deliveryendTimeString) {
         this.userId = userId;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -34,8 +55,13 @@ public class CartShipment {
         this.orderId = orderId;
         this.createdTime = createdTime;
         this.deliveryType = deliveryType;
+        this.deliverySlot = deliverySlot;
+        this.deliveryStartTimeString = deliveryStartTimeString;
+        this.deliveryendTimeString = deliveryendTimeString;
 
         shipmentIds = new ArrayList<>();
+        coordinate = new Coordinate(longitude,latitude);
+
     }
 
     public String getUserId() {

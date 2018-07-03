@@ -19,9 +19,11 @@ package com.graphhopper.jsprit.core.problem.solution;
 
 import com.graphhopper.jsprit.core.problem.job.Job;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
+import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -41,7 +43,7 @@ public class VehicleRoutingProblemSolution {
         return new VehicleRoutingProblemSolution(solution2copy);
     }
 
-    private final Collection<VehicleRoute> routes;
+    private Collection<VehicleRoute> routes;
 
     private Collection<Job> unassignedJobs = new ArrayList<Job>();
 
@@ -122,5 +124,15 @@ public class VehicleRoutingProblemSolution {
     @Override
     public String toString() {
         return "[costs=" + cost + "][routes=" + routes.size() + "][unassigned=" + unassignedJobs.size() + "]";
+    }
+
+    public void removeRoutes(List<VehicleRoute> routes)
+    {
+        for (VehicleRoute route:routes)
+            this.routes.remove(route);
+    }
+    public void addActivitiesToUnassigned(List<Job> jobs)
+    {
+        this.unassignedJobs.addAll(jobs);
     }
 }

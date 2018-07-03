@@ -13,6 +13,9 @@ public class UserBean {
     Long deliveryEndTime;
     String orderId;
     private String deliveryType;
+    private String deliverySlot;
+    private String deliveryStartTimeString;
+    private String deliveryendTimeString;
 
     public Long getDeliveryStartTime() {
         return deliveryStartTime;
@@ -35,8 +38,19 @@ public class UserBean {
     }
 
 
+    public String getDeliverySlot() {
+        return deliverySlot;
+    }
 
-    public UserBean(String userId, String orderId, String shipmentId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double longitude, Double latitude, Long createdTime,String deliveryType) {
+    public String getDeliveryStartTimeString() {
+        return deliveryStartTimeString;
+    }
+
+    public String getDeliveryendTimeString() {
+        return deliveryendTimeString;
+    }
+
+    public UserBean(String userId, String orderId, String shipmentId, String cartShipmentId, Long deliveryStartTime, Long deliveryEndTime, Double longitude, Double latitude, Long createdTime, String deliveryType, String deliverySlot, String deliveryStartTimeString, String deliveryendTimeString) {
         this.userId = userId;
         this.orderId = orderId;
         this.shipmentId = shipmentId;
@@ -48,6 +62,9 @@ public class UserBean {
         this.latitude = latitude;
         this.createdTime = createdTime;
         this.deliveryType = deliveryType;
+        this.deliverySlot = deliverySlot;
+        this.deliveryStartTimeString = deliveryStartTimeString;
+        this.deliveryendTimeString = deliveryendTimeString;
     }
 
     public String getUserId() {

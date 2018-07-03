@@ -1,6 +1,7 @@
 package com.graphhopper.jsprit.core.Bean;
 
 import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.util.Coordinate;
 
 public class CentreConfigBean {
     String centreId;
@@ -8,6 +9,7 @@ public class CentreConfigBean {
     Double centreLat;
     Double centreLong;
     Location centreLocation;
+    Coordinate centreCoordinate;
 
     public Integer getFleetSize() {
         return fleetSize;
@@ -31,6 +33,10 @@ public class CentreConfigBean {
         return centreLong;
     }
 
+    public Coordinate getCentreCoordinate() {
+        return centreCoordinate;
+    }
+
     public CentreConfigBean(String centreId, String centreName, Double centreLong, Double centreLat , Integer fleetSize) {
 
         this.centreId = centreId;
@@ -39,6 +45,8 @@ public class CentreConfigBean {
         this.centreLong = centreLong;
         this.fleetSize = fleetSize;
         this.centreLocation = Location.newInstance(centreLong,centreLat);
+        this.centreCoordinate = new Coordinate(centreLong,centreLat);
+
     }
 
     public Location getCentreLocation() {

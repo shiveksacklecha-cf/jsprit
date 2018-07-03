@@ -20,6 +20,7 @@ package com.graphhopper.jsprit.core.util;
 
 import com.graphhopper.jsprit.core.CurefitUtil.CentreConfig;
 import com.graphhopper.jsprit.core.CurefitUtil.Constants;
+import com.graphhopper.jsprit.core.CurefitUtil.StaticUtil;
 import com.graphhopper.jsprit.core.problem.Location;
 import com.graphhopper.jsprit.core.problem.cost.AbstractForwardVehicleRoutingTransportCosts;
 import com.graphhopper.jsprit.core.problem.driver.Driver;
@@ -32,7 +33,7 @@ import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCosts {
 
     //in km/hr
-    private double speed = 4;
+    private double speed = 4.16667;
 
     private double detour = 1.;
 
@@ -90,15 +91,27 @@ public class GreatCircleCosts extends AbstractForwardVehicleRoutingTransportCost
         }
         if (from == null || to == null) throw new NullPointerException("either from or to location is null");
         Double distance = GreatCircleDistanceCalculator.calculateDistance(from, to, distanceUnit) * detour;
-//        System.out.println("distance: "+ distance);
         return distance;
+    }
+    boolean isSameLocation(Location from, Location to)
+    {
+        boolean a = from.equals(to);
+        boolean b = StaticUtil.googlePlacesId.containsKey(from.getCoordinate())&&StaticUtil.googlePlacesId.containsKey(to.getCoordinate())&&StaticUtil.googlePlacesId.get(from.getCoordinate()).equals(StaticUtil.googlePlacesId.get(to.getCoordinate()));
+        return a||b;
     }
 
     @Override
     public double getTransportTime(Location from, Location to, double time, Driver driver, Vehicle vehicle) {
         Double transportTime = calculateDistance(from, to) / speed;
+        //pickup service time
         if(!from.equals(to) && from.equals(CentreConfig.getCentreConfig().getCentreLocation()))
             transportTime += Constants.PICKUP_SERVICE_TIME;
+        if(!to.equals(CentreConfig.getCentreConfig().getCentreLocation()))
+        {
+            transportTime += Constants.PER_ORDER_DELIVERY_SERVICE_TIME;
+        }
+        if(!isSameLocation(from,to))
+            transportTime+= Constants.DELIVERY_SERVICE_STATIC_TIME*2;
         return transportTime;
     }
 

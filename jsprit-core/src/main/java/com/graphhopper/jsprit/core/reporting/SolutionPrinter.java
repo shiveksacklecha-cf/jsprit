@@ -27,8 +27,10 @@ import com.graphhopper.jsprit.core.problem.job.Shipment;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
+import com.graphhopper.jsprit.core.util.DistanceUnit;
+import com.graphhopper.jsprit.core.util.OSRMDistanceCalculator;
 
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,10 +41,20 @@ import java.util.List;
  *
  * @author stefan schroeder
  */
-public class SolutionPrinter {
+public class SolutionPrinter implements Serializable {
 
     // Wrapping System.out into a PrintWriter
-    private static final PrintWriter SYSTEM_OUT_AS_PRINT_WRITER = new PrintWriter(System.out);
+    static FileWriter fileWriter;
+
+//    static {
+//        try {
+//            fileWriter = new FileWriter(String.format("osrm_outputs/%s", Constants.DISPATCH_TIME_STRING));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
+    private static PrintWriter SYSTEM_OUT_AS_PRINT_WRITER;
 
     /**
      * Enum to indicate verbose-level.
@@ -98,8 +110,21 @@ public class SolutionPrinter {
      * @param solution the solution to be printed
      */
     public static void print(VehicleRoutingProblem problem, VehicleRoutingProblemSolution solution, Print print) {
+        try {
+            fileWriter = new FileWriter(String.format("osrm_outputs/%s", Constants.DISPATCH_TIME_STRING));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        SYSTEM_OUT_AS_PRINT_WRITER = new PrintWriter(fileWriter);
         print(SYSTEM_OUT_AS_PRINT_WRITER, problem, solution, print);
         SYSTEM_OUT_AS_PRINT_WRITER.flush();
+        SYSTEM_OUT_AS_PRINT_WRITER.close();
+        try {
+            fileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -140,38 +165,51 @@ public class SolutionPrinter {
         if (print.equals(Print.VERBOSE)) {
             printVerbose(out, problem, solution);
         }
+
+        System.out.println("Object has been serialized");
     }
 
     private static void printVerbose(VehicleRoutingProblem problem, VehicleRoutingProblemSolution solution) {
         printVerbose(SYSTEM_OUT_AS_PRINT_WRITER, problem, solution);
         SYSTEM_OUT_AS_PRINT_WRITER.flush();
+        SYSTEM_OUT_AS_PRINT_WRITER.close();
     }
 
     private static void printVerbose(PrintWriter out, VehicleRoutingProblem problem, VehicleRoutingProblemSolution solution) {
-        String leftAlgin = "| %-7s | %-20s | %-21s | %-15s | %-15s | %-15s | %-15s | %-15s |%n";
-        out.format("+--------------------------------------------------------------------------------------------------------------------------------------------------+%n");
-        out.printf("| detailed solution                                                                                                              |                  %n");
-        out.format("+---------+----------------------+-----------------------+-----------------+-----------------+-----------------+-----------------+------------------%n");
-        out.printf("| route   | vehicle              | activity              | job             | arrTime         | endTime         | costs           | watTime         |%n");
+        String leftAlgin = "| %-7s | %-20s | %-21s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s | %-15s |%n";
+        out.format("+--------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+%n");
+        out.printf("| detailed solution                                                                                                                                |                 |                  %n");
+        out.format("+---------+----------------------+-----------------------+-----------------+-----------------+-----------------+-----------------+-----------------+-----------------+------------------%n");
+        out.printf("| route   | vehicle              | activity              | job             | arrTime         | endTime        | waitTime(min)   | DeliveryType    |Time after start(Min)| Distance From kitchen %n");
         int routeNu = 1;
 
         List<VehicleRoute> list = new ArrayList<VehicleRoute>(solution.getRoutes());
         Collections.sort(list , new com.graphhopper.jsprit.core.util.VehicleIndexComparator());
-        Double avgNumOfShipmentsPerRoute = 0.0;
-        Double totalShipmentsDelivered =0.0;
+        Double totalPickups =0.0;
+        Double totalShipmentsPickedUpInRoute = 0.0;
         Double totalNumberOfRoutes =0.0;
+        Double totalWaitingTime = 0.0;
+        Double onDemandTotalArrivalTimeAfterStart =0.0;
+        Double slottedTotalArrivalTimeAfterStart =0.0;
+        Double totalSlottedOrders =0.0;
+        Double totalOnDemandOrders =0.0;
+
+
+
+
 
 
 
 
         for (VehicleRoute route : list) {
-            out.format("+---------+----------------------+-----------------------+-----------------+-----------------+-----------------+-----------------+-----------------+%n");
+            out.format("+---------+----------------------+-----------------------+-----------------+-----------------+----------------+-----------------+-----------------+-----------------+-----------------+%n");
             double costs = 0;
             out.format(leftAlgin, routeNu, getVehicleString(route), route.getStart().getName(), "-", "undef", Math.round(route.getStart().getEndTime()),
-                Math.round(costs),0);
+                Math.round(costs),0,"","-","-");
             TourActivity prevAct = route.getStart();
-            Double maxWaitingTime = 0.0;
-            for (TourActivity act : route.getActivities()) {
+            int idx = 0;
+            List<TourActivity> activities = route.getActivities();
+            for (TourActivity act : activities) {
                 String jobId;
                 if (act instanceof TourActivity.JobActivity) {
                     jobId = ((TourActivity.JobActivity) act).getJob().getId();
@@ -182,41 +220,94 @@ public class SolutionPrinter {
                     route.getVehicle());
                 c += problem.getActivityCosts().getActivityCost(act, act.getArrTime(), route.getDriver(), route.getVehicle());
                 costs += c;
-                Double waitingTime = Math.round(act.getEndTime()) -  Math.round(act.getArrTime()) - (act.getName().equals("deliverShipment")?Constants.DELIVERY_SERVICE_TIME:0);
-//                waitingTime = (waitingTime);
-                maxWaitingTime = Math.max(waitingTime,maxWaitingTime);
-                totalShipmentsDelivered += act.getName().equals("deliverShipment")?1.0:0.0;
-                out.format(leftAlgin, routeNu, getVehicleString(route), act.getName(), jobId, Math.round(act.getArrTime()),
-                    Math.round(act.getEndTime()), Math.round(costs),Math.ceil(waitingTime));
+                Double waitingTime = act.getEndTime() -  act.getArrTime();
+                totalWaitingTime+= waitingTime;
+                totalPickups += act.getName().equals("pickupShipment")?1.0:0.0;
+                totalShipmentsPickedUpInRoute += StaticUtil.cartShipmentIdToCShipment.get(jobId).getNumberOfShipments();
+                out.format(leftAlgin,
+                    routeNu,
+                    getVehicleString(route),
+                    act.getName(),
+                    jobId,
+                    Math.round(act.getArrTime()),
+                    Math.round(act.getEndTime()),
+                    Math.round(waitingTime/60),
+                    act.getName().equals("deliverShipment")?StaticUtil.cartShipmentIdToCShipment.get(jobId).getDeliveryType():"",
+                    act.getName().equals("deliverShipment")? Math.round((act.getArrTime()-(StaticUtil.cartShipmentIdToCShipment.get(jobId).getDeliveryStartTime()-Constants.DISPATCH_TIME))/60):" ",
+                    act.getName().equals("deliverShipment")?OSRMDistanceCalculator.calculateDistance(StaticUtil.centreConfigBean.getCentreCoordinate(),StaticUtil.cartShipmentIdToCShipment.get(jobId).getCoordinate(),DistanceUnit.Meter):"-");
                 prevAct = act;
+                if(act.getName().equals("pickupShipment")&&activities.get(idx+1).getName().equals("deliverShipment"))
+                {
+                    totalNumberOfRoutes++;
+                }
+                if(act.getName().equals("deliverShipment"))
+                {
+                    if(StaticUtil.cartShipmentIdToCShipment.get(jobId).getDeliveryType().equals("ON_DEMAND"))
+                    {
+                        onDemandTotalArrivalTimeAfterStart+=Math.round((act.getArrTime()-(StaticUtil.cartShipmentIdToCShipment.get(jobId).getDeliveryStartTime()-Constants.DISPATCH_TIME))/60);
+                        totalOnDemandOrders++;
+                    }
+                    else if(StaticUtil.cartShipmentIdToCShipment.get(jobId).getDeliveryType().equals("SLOTTED"))
+                    {
+                        slottedTotalArrivalTimeAfterStart+=Math.round((act.getArrTime()-(StaticUtil.cartShipmentIdToCShipment.get(jobId).getDeliveryStartTime()-Constants.DISPATCH_TIME))/60);
+                        totalSlottedOrders++;
+                    }
+                }
+                idx++;
             }
-            totalNumberOfRoutes+= 1.0;
-            StaticUtil.waitingTimeForVehicles.add(maxWaitingTime);
             double c = problem.getTransportCosts().getTransportCost(prevAct.getLocation(), route.getEnd().getLocation(), prevAct.getEndTime(),
                 route.getDriver(), route.getVehicle());
             c += problem.getActivityCosts().getActivityCost(route.getEnd(), route.getEnd().getArrTime(), route.getDriver(), route.getVehicle());
             costs += c;
             out.format(leftAlgin, routeNu, getVehicleString(route), route.getEnd().getName(), "-", Math.round(route.getEnd().getArrTime()), "undef",
-                Math.round(costs),0);
+                0,"-","-","-");
             routeNu++;
         }
         out.format("+--------------------------------------------------------------------------------------------------------------------------------+%n");
         if (!solution.getUnassignedJobs().isEmpty()) {
-            out.format("+----------------+%n");
-            out.format("| unassignedJobs |%n");
-            out.format("+----------------+%n");
-            String unassignedJobAlgin = "| %-14s |%n";
+            out.format("+----------------+----------------+-------------+------------------------------+------------------------------+%n");
+            out.format("| unassignedJobs |Delivery Start Time           |Delivery End   Time           |Distance           |%n");
+            out.format("+----------------+----------------+-------------+------------------------------+%n");
+            String unassignedJobAlgin = "| %-14s | %-14s | %-14s | %-14s |%n";
             for (Job j : solution.getUnassignedJobs()) {
-                out.format(unassignedJobAlgin, j.getId());
+                out.format(unassignedJobAlgin, j.getId(),StaticUtil.cartShipmentIdToCShipment.get(j.getId()).getDeliveryStartTimeString(),StaticUtil.cartShipmentIdToCShipment.get(j.getId()).getDeliveryendTimeString(),OSRMDistanceCalculator.calculateDistance(StaticUtil.centreConfigBean.getCentreCoordinate(),StaticUtil.cartShipmentIdToCShipment.get(j.getId()).getCoordinate(),DistanceUnit.Meter));
             }
             out.format("+----------------+%n");
         }
 
         out.format("+----------------+%n");
-        out.format("| avgNumOfShipmentsPerRoute |%n");
+        out.format("| avgNumOfCartsPerTrip |%n");
+        out.format("+----------------+%n");
+        String avgNumCartsString = "| %.2f |%n";
+        out.format(avgNumCartsString, totalPickups/totalNumberOfRoutes);
+        out.format("| avgShipmentsPerTrip |%n");
         out.format("+----------------+%n");
         String avgNumShipmentsString = "| %.2f |%n";
-        out.format(avgNumShipmentsString, totalShipmentsDelivered/totalNumberOfRoutes);
+        out.format(avgNumShipmentsString, totalShipmentsPickedUpInRoute/totalNumberOfRoutes);
+
+        out.format("+----------------+%n");
+        out.format("|TotalWaitingTime(Min)|%n");
+        out.format("+----------------+%n");
+        String totalWaitingTimeString = "| %.2f |%n";
+        out.format(totalWaitingTimeString, totalWaitingTime/60);
+
+        out.format("+----------------+%n");
+        out.format("|AvgWaitingTimePerTrip(Min)|%n");
+        out.format("+----------------+%n");
+        String avgWaitingTimeString = "| %.2f |%n";
+        out.format(avgWaitingTimeString, totalWaitingTime/(60*totalNumberOfRoutes));
+
+        out.format("+----------------+%n");
+        out.format("|On Demand Avg Arrival Time after Start(Min)|%n");
+        out.format("+----------------+%n");
+        String onDemandAvgArrivalTimeString = "| %.2f |%n";
+        out.format(onDemandAvgArrivalTimeString, onDemandTotalArrivalTimeAfterStart/totalOnDemandOrders);
+
+        out.format("+----------------+%n");
+        out.format("|Slotted Avg Arrival Time after Start(Min)|%n");
+        out.format("+----------------+%n");
+        String slottedAvgArrivalTimeString = "| %.2f |%n";
+        out.format(slottedAvgArrivalTimeString, slottedTotalArrivalTimeAfterStart/totalSlottedOrders);
 
 
     }

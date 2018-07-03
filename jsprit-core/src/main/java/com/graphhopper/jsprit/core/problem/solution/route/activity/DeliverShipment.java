@@ -23,7 +23,7 @@ import com.graphhopper.jsprit.core.problem.Location;
 import com.graphhopper.jsprit.core.problem.job.Job;
 import com.graphhopper.jsprit.core.problem.job.Shipment;
 
-public final class DeliverShipment extends AbstractActivity implements DeliveryActivity {
+public  class DeliverShipment extends AbstractActivity implements DeliveryActivity {
 
     private Shipment shipment;
 
